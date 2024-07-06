@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  database:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: reflex
+      POSTGRES_PASSWORD: reflex
+      POSTGRES_DB: reflex
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./db:/var/lib/postgresql/data

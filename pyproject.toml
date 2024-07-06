@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "reflex-on-fly"
+version = "0.1.0"
+description = ""
+authors = ["jarulnathan <justin.arulnathan@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11.9"
+reflex = "^0.5.5"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

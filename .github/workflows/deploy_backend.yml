@@ -1,0 +1,32 @@
+name: Fly Deploy Backend
+# on:
+#   push:
+#     branches:
+#       - main
+on:
+  workflow_dispatch:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy app
+    runs-on: ubuntu-latest
+    concurrency: deploy-group    # optional: ensure only one action runs at a time
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Print Fly App info
+        id: set_var
+        run: |
+          echo "APP_NAME=$(flyctl config show --local | jq .app)" >> $GITHUB_OUTPUT
+          echo "APP_PORT=$(flyctl config show --local | jq .http_service.internal_port)" >> $GITHUB_OUTPUT
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Print step summary
+        run: |
+          echo "${{ steps.set_var.outputs.APP_NAME }}.fly.dev:${{ steps.set_var.outputs.APP_PORT }}" >> $GITHUB_STEP_SUMMARY
