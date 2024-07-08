@@ -1,15 +1,18 @@
 name: Fly Deploy Backend
+
 # on:
-#   push:
-#     branches:
-#       - main
+#   workflow_dispatch:
+#     branches: [main]
 on:
-  workflow_dispatch:
-    branches: [main]
+  push:
+    branches:
+      - main
+    paths:
+      - 'reflex_on_fly_deployment/**'
 
 jobs:
-  deploy:
-    name: Deploy app
+  deploy-backend:
+    name: Deploy app backend
     runs-on: ubuntu-latest
     concurrency: deploy-group    # optional: ensure only one action runs at a time
     steps:
@@ -22,11 +25,62 @@ jobs:
       - name: Print Fly App info
         id: set_var
         run: |
-          echo "APP_NAME=$(flyctl config show --local | jq .app)" >> $GITHUB_OUTPUT
-          echo "APP_PORT=$(flyctl config show --local | jq .http_service.internal_port)" >> $GITHUB_OUTPUT
+          echo "APP_NAME=$(flyctl config show --local | jq -r .app)" >> $GITHUB_OUTPUT
+          echo "APP_PORT=$(flyctl config show --local | jq -r .http_service.internal_port)" >> $GITHUB_OUTPUT
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Print step summary
+      - name: Set API URL for frontend
+        id: set_api_url
         run: |
-          echo "${{ steps.set_var.outputs.APP_NAME }}.fly.dev:${{ steps.set_var.outputs.APP_PORT }}" >> $GITHUB_STEP_SUMMARY
+          echo "API_URL=https://${{ steps.set_var.outputs.APP_NAME }}.fly.dev" >> $GITHUB_OUTPUT
+          echo "https://${{ steps.set_var.outputs.APP_NAME }}.fly.dev:${{ steps.set_var.outputs.APP_PORT }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-frontend:
+    name: Deploy app frontend
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    permissions:
+      contents: read
+      deployments: write
+    concurrency: deploy-group    # optional: ensure only one action runs at a time
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.9'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          virtualenvs-path: ~/.virtualenvs
+          installer-parallel: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.virtualenvs
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root --no-dev
+
+      - name: Build frontend
+        env:
+          API_URL: ${{ steps.set_api_url.outputs.API_URL }} # https://reflex-on-fly-deployment.fly.dev
+        run: poetry run reflex export --frontend-only --no-zip
+
+      - name: Publish
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: reflex # name of Cloudflare pages project
+          directory: ./.web/_static/ # location of static frontend build
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
