@@ -1,4 +1,4 @@
-from reflex_on_fly import __version__
+from reflex_on_fly_deployment import __version__
 
 
 def test_version():
