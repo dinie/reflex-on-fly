@@ -24,7 +24,7 @@ resource "cloudflare_pages_project" "basic_project" {
 resource "cloudflare_record" "record_validation" {
   zone_id         = var.cloudflare_zone_id
   name            = var.cloudflare_project_name
-  value           = cloudflare_pages_project.basic_project.name
+  value           = "${cloudflare_pages_project.basic_project.name}.pages.dev"
   type            = "CNAME"
   ttl             = 1
   proxied         = true
