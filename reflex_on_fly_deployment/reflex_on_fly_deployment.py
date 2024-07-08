@@ -18,8 +18,8 @@ def index() -> rx.Component:
         rx.vstack(
             rx.heading("This is a boring app!", size="9"),
             rx.text(
-                "Get started by editing ",
-                rx.code(f"{config.app_name}/{config.app_name}.py"),
+                "Used to demonstrate CI/CD with GH actions ",
+                rx.code(f"{config.app_name}.py"),
                 size="5",
             ),
             rx.link(
