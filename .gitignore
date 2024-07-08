@@ -136,7 +136,7 @@ venv/
 wheels/
 # Terraform
 *.tfplan
-*.tfstate
+*.tfstate*
 **/.terraform/*
 **/.terraform*
 *.tfvars
