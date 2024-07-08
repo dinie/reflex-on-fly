@@ -15,6 +15,8 @@ jobs:
     name: Deploy app backend
     runs-on: ubuntu-latest
     concurrency: deploy-group    # optional: ensure only one action runs at a time
+    outputs:
+      api_url: ${{ steps.set_api_url.outputs.API_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
@@ -56,7 +58,7 @@ jobs:
         uses: snok/install-poetry@v1
         with:
           virtualenvs-create: true
-          virtualenvs-in-project: true
+          virtualenvs-in-project: false
           virtualenvs-path: ~/.virtualenvs
           installer-parallel: true
 
@@ -73,7 +75,7 @@ jobs:
 
       - name: Build frontend
         env:
-          API_URL: ${{ steps.set_api_url.outputs.API_URL }} # https://reflex-on-fly-deployment.fly.dev
+          API_URL: ${{needs.deploy-backend.outputs.api_url}} # https://reflex-on-fly-deployment.fly.dev
         run: poetry run reflex export --frontend-only --no-zip
 
       - name: Publish
